@@ -1,0 +1,15 @@
+sentence-transformers
+faiss-cpu
+transformers 
+accelerate 
+torch
+pandas
+openpyxl
+yahooquery
+yahoo_fin
+requests_html
+rag_engine
+sentencepiece
+streamlit
+yfinance
+plotly
