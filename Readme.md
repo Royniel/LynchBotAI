@@ -1,5 +1,50 @@
 Peter Lynch chatbot
 
+### Demo
+
+#### Walkthrough video
+
+[![Watch the LynchBot walkthrough](docs/media/LynchBotScreenshot1.png)](docs/media/LynchbotVideo1.mp4)
+
+▶ **[Watch the full walkthrough](docs/media/LynchbotVideo1.mp4)** — click the image above or this link to open the recording on GitHub, where you can play or download it (`.mp4`, ~16 MB).
+
+<!--
+  To get an inline, auto-playing player instead of a click-through link:
+  open any issue or PR on this repo, drag LynchbotVideo1.mp4 into the comment box,
+  wait for the upload to finish, copy the generated
+  https://github.com/user-attachments/... URL, and paste it on its own line here.
+  GitHub only renders the inline player for URLs it hosts, not for files
+  committed to the repository.
+-->
+
+#### Screenshots
+
+**1. Chat-Bot — the LynchBot conversational tab**
+
+Landing view. The sidebar holds the stock universe (30 Dow constituents pre-selected, with a box to add custom tickers); the four tabs across the top are Chat-Bot, Financial Ratios Dashboard, Value–Quality Clusters, and Strategy Backtest.
+
+![LynchBot chat tab, showing the stock universe sidebar and the LynchBot intro message](docs/media/LynchBotScreenshot1.png)
+
+**2. Chat-Bot — a grounded answer in action**
+
+LynchBot answering "How would Peter Lynch invest now?" using only the curated Q&A corpus, and holding the conversation open for follow-ups.
+
+![LynchBot answering a question about how Peter Lynch would invest now](docs/media/LynchBotScreenshot2.png)
+
+**3. Financial Ratios Dashboard — fundamental snapshot**
+
+Live fundamentals pulled per ticker (price, P/E, P/B, ROE, profit margin, debt-to-equity, dividend yield) alongside the derived `value_score` and `quality_score` that feed the clustering step.
+
+![Financial ratios dashboard showing a fundamentals table for the selected stocks](docs/media/LynchBotScreenshot3.png)
+
+**4. Strategy Backtest — long/short baskets and parameters**
+
+The long and short baskets derived from the K-Means clusters, with configurable start/end dates, weighting scheme, rebalance frequency, benchmark, and transaction costs in basis points.
+
+![Strategy backtest tab showing long and short ticker baskets and backtest parameters](docs/media/LynchBotScreenshot4.png)
+
+* * * * *
+
 ### 1\. Scope and current status
 
 Part I -- Chat-bot (RAG + dataset engineering)
