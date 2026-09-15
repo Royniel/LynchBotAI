@@ -20,14 +20,43 @@ import torch
 from sentence_transformers import SentenceTransformer, util
 from transformers import T5ForConditionalGeneration, T5Tokenizer
 
-# Try to import NLTK for better sentence splitting
+# Try to import NLTK for better sentence splitting.
+# NLTK >= 3.9 needs the 'punkt_tab' resource (older releases used 'punkt'), and the
+# download can fail offline or behind an SSL-inspecting proxy. Probe the tokenizer
+# instead of trusting the download, so a missing resource degrades to regex
+# splitting rather than breaking every answer at generation time.
 try:
     import nltk
-    nltk.download('punkt', quiet=True)
+
+    _PROBE = "Probe sentence one. Probe sentence two."
+
+    def _nltk_ready() -> bool:
+        try:
+            nltk.tokenize.sent_tokenize(_PROBE)
+            return True
+        except Exception:
+            return False
+
+    # Probe before downloading: when the corpus is already cached this avoids a
+    # pointless network round-trip (and its noisy SSL failure) on every startup.
+    if not _nltk_ready():
+        for _resource in ("punkt_tab", "punkt"):
+            try:
+                nltk.download(_resource, quiet=True)
+            except Exception:
+                pass
+
+    if not _nltk_ready():
+        raise RuntimeError("punkt/punkt_tab corpus unavailable")
+
     USE_NLTK = True
-except ImportError:
+except Exception as _nltk_err:
     USE_NLTK = False
-    print("Warning: NLTK not installed. Using regex for sentence splitting (less accurate).")
+    print(
+        "Warning: NLTK sentence tokenizer unavailable "
+        f"({type(_nltk_err).__name__}). Using regex for sentence splitting "
+        "(less accurate). To enable it, run: python -m nltk.downloader punkt_tab"
+    )
 
 # ============================================================
 # CONFIGURATION
@@ -262,9 +291,12 @@ def normalize_query_spelling(query: str) -> str:
         "ppg ratio": "peg ratio",
     }
 
+    # Match whole words only. A plain substring replace corrupts correct spellings,
+    # because several typos are prefixes of the word they map to: "lync" occurs
+    # inside "lynch", so "lynch" became "lynchh". Corrections also cascaded into
+    # each other ("lych" -> "lynch" -> "lynchh"). Word boundaries prevent both.
     for wrong, correct in CORRECTIONS.items():
-        if wrong in q:
-            q = q.replace(wrong, correct)
+        q = re.sub(rf'\b{re.escape(wrong)}\b', correct, q)
 
     return q
 
@@ -520,6 +552,9 @@ def _clean_generated_answer(text: str, min_length: int = None, max_length: int =
     # -----------------------------------------------------
     # 1) Remove any leaked prompt / instruction artifacts
     # -----------------------------------------------------
+    # Section headers emitted by _build_prompt, plus stale ones from earlier prompt
+    # revisions (harmless to keep). Matched case-insensitively because the model
+    # frequently echoes them lowercased.
     prompt_artifacts = [
         "Lynch's Knowledge (use this to answer):",
         "Complete Answer (remember: full sentences, specific Lynch principles):",
@@ -528,15 +563,21 @@ def _clean_generated_answer(text: str, min_length: int = None, max_length: int =
         "Previous conversation:",
         "Your answer MUST",
         "VERY IMPORTANT:",
+        "User profile:",
+        "Context:",
+        "Answer:",
     ]
-    
+
     # Remove artifacts intelligently - just the phrases, not everything after
     for artifact in prompt_artifacts:
         # First try to remove if it's at the start of a line
-        text = re.sub(r'^' + re.escape(artifact) + r'\s*', '', text, flags=re.MULTILINE)
+        text = re.sub(
+            r'^' + re.escape(artifact) + r'\s*', '', text,
+            flags=re.MULTILINE | re.IGNORECASE
+        )
         # Then remove any remaining instances
-        text = text.replace(artifact, "")
-    
+        text = re.sub(re.escape(artifact), '', text, flags=re.IGNORECASE)
+
     # Remove speaker tags like "User:" / "LynchBot:" if they leak into the answer
     text = re.sub(r'^(User|LynchBot)\s*:\s*', '', text, flags=re.MULTILINE)
     text = re.sub(r'(User|LynchBot)\s*:\s*', '', text)
@@ -574,7 +615,39 @@ def _clean_generated_answer(text: str, min_length: int = None, max_length: int =
         "my training data",
         "according to my training",
     ]
-    
+
+    # FLAN-T5-base intermittently echoes the prompt's own instructions into the
+    # answer (it samples at temperature 0.7). Each fragment below is lifted from
+    # the instruction text _build_prompt actually emits; none can occur in a
+    # legitimate explanation of Lynch's investing philosophy, so any sentence
+    # containing one is a leak and gets dropped whole.
+    INSTRUCTION_LEAK_FRAGMENTS = [
+        "as if you are chatting",
+        "be specific but easy to understand",
+        "well-structured answer",
+        "no bullet points",
+        "complete sentences",
+        "full sentences",
+        "without cutting off mid-sentence",
+        "use only this information",
+        "not covered in the context",
+        "below is background information",
+        "gently guide the user",
+        "instead of guessing",
+        "isn't a direct match",
+        "conversational language",
+        "conversational way",
+        "use the following information",
+        "to answer the question",
+    ]
+
+    # The prompt opens with "You are LynchBot, a friendly assistant who...".
+    # FLAN-T5 sometimes echoes that persona line back, often truncated
+    # ("You are Lynch"), which is too long to be caught by the short-fragment
+    # check below. Only sentences *starting* with the phrase are dropped, since
+    # LynchBot never legitimately addresses the user as "You are Lynch...".
+    PERSONA_LEAK_RE = re.compile(r'^you are lynch', re.IGNORECASE)
+
     for s in raw_sentences:
         s = s.strip()
         if not s:
@@ -593,7 +666,16 @@ def _clean_generated_answer(text: str, min_length: int = None, max_length: int =
         if any(pattern in s_lower for pattern in META_PATTERNS):
             logger.debug(f"Filtered meta sentence: {s[:50]}...")
             continue
-        
+
+        # Skip echoed persona / instruction text leaked from the prompt
+        if PERSONA_LEAK_RE.match(s):
+            logger.debug(f"Filtered leaked persona line: {s[:50]}...")
+            continue
+
+        if any(fragment in s_lower for fragment in INSTRUCTION_LEAK_FRAGMENTS):
+            logger.debug(f"Filtered leaked instruction: {s[:50]}...")
+            continue
+
         # Additional check: skip very short fragments
         if len(s) < 10 and not re.search(r'[.!?]$', s):
             continue

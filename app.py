@@ -83,7 +83,8 @@ selected_tickers = st.sidebar.multiselect(
     "Selected portfolio:",
     options=all_choices,
     key="selected_tickers",  # binds to st.session_state["selected_tickers"]
-    default=st.session_state.selected_tickers,
+    # No `default=` here: the initial value is seeded into session_state above.
+    # Passing both makes Streamlit warn that the default is being overridden.
     help="Dow Jones constituents are pre-selected. You can uncheck any of them "
          "and add new tickers above.",
 )
@@ -255,7 +256,6 @@ with tab_fundamentals:
                     "quality_score": "{:,.3f}",
                 }
             ),
-            use_container_width=True,
         )
 
         metric = st.selectbox(
@@ -299,7 +299,7 @@ with tab_clusters:
             title="Value vs. Quality — K-Means Clusters",
         )
         fig.update_traces(textposition="top center")
-        st.plotly_chart(fig, key="cluster_chart", use_container_width=True)
+        st.plotly_chart(fig, key="cluster_chart")
 
         col_long, col_short = st.columns(2)
         with col_long:
@@ -312,7 +312,7 @@ with tab_clusters:
             for t in short_list:
                 st.markdown(f"- **{t}**")
 
-        st.dataframe(cluster_df, use_container_width=True)
+        st.dataframe(cluster_df)
 
 # -------------------------------------------------------------------
 # TAB 4 — Strategy Backtest
@@ -400,7 +400,7 @@ with tab_backtest:
             if m in metrics_series:
                 metrics_series[m] *= 100
 
-        st.dataframe(metrics_series.to_frame("Value").style.format("{:.2f}"), use_container_width=True)
+        st.dataframe(metrics_series.to_frame("Value").style.format("{:.2f}"))
 
         # --- Equity Curve ---
         st.markdown("### Equity Curve (Strategy vs Benchmark)")
@@ -413,7 +413,7 @@ with tab_backtest:
         eq_long = eq_df.reset_index().melt(id_vars="Date", var_name="Series", value_name="Equity")
 
         fig_eq = px.line(eq_long, x="Date", y="Equity", color="Series")
-        st.plotly_chart(fig_eq, key="equity_curve_chart", use_container_width=True)
+        st.plotly_chart(fig_eq, key="equity_curve_chart")
 
         # --- Rolling Sharpe ---
         st.markdown("### Rolling Sharpe Ratio (63-day window)")
@@ -426,7 +426,7 @@ with tab_backtest:
             rs_df.columns = ["Date", "rolling_sharpe"]
 
             fig_rs = px.line(rs_df, x="Date", y="rolling_sharpe", labels={"rolling_sharpe": "Sharpe (63D)"})
-            st.plotly_chart(fig_rs, key="rolling_sharpe_chart", use_container_width=True)
+            st.plotly_chart(fig_rs, key="rolling_sharpe_chart")
 
         # --- Correlation Heatmap ---
         st.markdown("### Correlation Heatmap (Asset Returns)")
@@ -440,7 +440,7 @@ with tab_backtest:
             zmin=-1,
             zmax=1,
         )
-        st.plotly_chart(fig_corr, key="corr_heatmap_chart", use_container_width=True)
+        st.plotly_chart(fig_corr, key="corr_heatmap_chart")
 
         # --- Portfolio Composition ---
         st.markdown("### Portfolio Composition (Latest Weights)")
@@ -457,4 +457,4 @@ with tab_backtest:
         )
 
         fig_comp = px.bar(comp_df, x="Ticker", y="Absolute Weight")
-        st.plotly_chart(fig_comp, key="portfolio_weights_chart", use_container_width=True)
+        st.plotly_chart(fig_comp, key="portfolio_weights_chart")

@@ -1,15 +1,23 @@
-sentence-transformers
-faiss-cpu
-transformers 
-accelerate 
-torch
-pandas
-openpyxl
-yahooquery
-yahoo_fin
-requests_html
-rag_engine
-sentencepiece
-streamlit
-yfinance
-plotly
+# Pinned to the versions verified working on Python 3.12 (macOS).
+# Regenerate with: pip install -r requirements.txt
+
+# --- UI ---
+streamlit==1.52.0
+plotly==6.5.0
+
+# --- Data handling ---
+pandas==2.3.3
+numpy==2.3.5
+openpyxl==3.1.5          # required by pandas.read_excel for the .xlsx dataset
+
+# --- RAG: embeddings + generation ---
+torch==2.9.1
+transformers==4.57.3
+sentence-transformers==5.1.2
+sentencepiece==0.2.1     # required by the slow T5Tokenizer used in rag_pipeline
+nltk==3.9.2              # sentence splitting; needs the punkt_tab corpus (see README)
+
+# --- Stock analytics ---
+scikit-learn==1.7.2      # KMeans + StandardScaler in financial_data.py
+yahooquery==2.4.1        # fundamentals
+yfinance==0.2.66         # price history for the backtest

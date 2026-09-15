@@ -156,6 +156,19 @@ Install dependencies:
 
 pip install -r requirements.txt
 
+Download the NLTK sentence-tokenizer corpus (used to clean generated answers):
+
+python -m nltk.downloader punkt_tab
+
+If this fails on macOS with `CERTIFICATE_VERIFY_FAILED`, your Python install is
+missing its CA bundle. Either run `/Applications/Python 3.12/Install Certificates.command`,
+or point Python at certifi's bundle for the download:
+
+SSL_CERT_FILE="$(python -c 'import certifi; print(certifi.where())')" python -m nltk.downloader punkt_tab
+
+This step is optional — the pipeline falls back to regex sentence splitting if the
+corpus is missing — but the NLTK splitter handles abbreviations and decimals better.
+
 1.
 
 2.  Place the Lynch dataset file:

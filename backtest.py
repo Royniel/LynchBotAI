@@ -259,7 +259,9 @@ def _metrics(returns: pd.Series, equity: pd.Series):
     years = len(returns) / ann
     cagr = float(equity.iloc[-1] ** (1 / years) - 1)
     vol = float(returns.std() * np.sqrt(ann))
-    sharpe = float((returns.mean() * ann) / (returns.std() + 1e-9))
+    # Annualize numerator by `ann` and denominator by sqrt(ann) — scaling only the
+    # numerator overstates Sharpe by a factor of sqrt(252).
+    sharpe = float((returns.mean() * ann) / (returns.std() * np.sqrt(ann) + 1e-9))
 
     running_max = equity.cummax()
     max_dd = float((equity / running_max - 1).min())
@@ -319,7 +321,7 @@ def run_long_short_backtest(config: BacktestConfig, fin_df: Optional[pd.DataFram
         fin_df=fin_df
     )
 
-    weights = weights.reindex(asset_returns.index).fillna(method="ffill").fillna(0)
+    weights = weights.reindex(asset_returns.index).ffill().fillna(0)
 
     # Raw portfolio returns
     raw_returns = (weights * asset_returns).sum(axis=1)

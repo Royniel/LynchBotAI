@@ -32,8 +32,16 @@ def load_tickers():
 
 # Fetch financials using yahooquery
 def safe_get(d, key, default=np.nan):
-    v = d.get(key, default)
-    if isinstance(v, (int, float)):
+    if not isinstance(d, dict):
+        # yahooquery returns a plain error string instead of a dict for bad tickers.
+        return np.nan
+    v = d.get(key)
+    if v is None or isinstance(v, bool):
+        # Fall back when the key is absent *or* present-but-null; dict.get's own
+        # default only covers the absent case. bool is excluded because it is a
+        # subclass of int and would otherwise coerce to 0.0/1.0.
+        v = default
+    if isinstance(v, (int, float)) and not isinstance(v, bool):
         return float(v)
     return np.nan
 
