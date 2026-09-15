@@ -2,20 +2,13 @@ Peter Lynch chatbot
 
 ### Demo
 
-#### Walkthrough video
+#### Walkthrough
 
-[![Watch the LynchBot walkthrough](docs/media/LynchBotScreenshot1.png)](docs/media/LynchbotVideo1.mp4)
+A full session: asking "Who is Peter Lynch", then following up with "Tell me about Peter Lynch investment strategy" — each answer generated from the curated Q&A corpus, with the retrieved supporting snippets available underneath.
 
-▶ **[Watch the full walkthrough](docs/media/LynchbotVideo1.mp4)** — click the image above or this link to open the recording on GitHub, where you can play or download it (`.mp4`, ~16 MB).
+![Animated walkthrough of LynchBot answering two questions about Peter Lynch in the Streamlit chat interface](docs/media/LynchBotDemo.gif)
 
-<!--
-  To get an inline, auto-playing player instead of a click-through link:
-  open any issue or PR on this repo, drag LynchbotVideo1.mp4 into the comment box,
-  wait for the upload to finish, copy the generated
-  https://github.com/user-attachments/... URL, and paste it on its own line here.
-  GitHub only renders the inline player for URLs it hosts, not for files
-  committed to the repository.
--->
+*Recorded at 2× speed. Plays automatically and loops.*
 
 #### Screenshots
 
